@@ -1,65 +1,196 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import { useState, useRef } from 'react';
+
+export default function DocumentExtractor() {
+  const [images, setImages] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    
+    if (images.length + files.length > 10) {
+      setError('Tối đa chỉ được upload 10 ảnh.');
+      return;
+    }
+
+    setError(null);
+    setResult(null);
+
+    const newImagesPromises = files.map((file) => {
+      return new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (event) => resolve(event.target?.result as string);
+        reader.onerror = (error) => reject(error);
+        reader.readAsDataURL(file);
+      });
+    });
+
+    Promise.all(newImagesPromises)
+      .then((base64Images) => {
+        setImages((prev) => [...prev, ...base64Images]);
+      })
+      .catch(() => setError('Lỗi khi đọc file ảnh.'));
+  };
+
+  const removeImage = (index: number) => {
+    setImages((prev) => prev.filter((_, i) => i !== index));
+    if (images.length <= 1) {
+      setResult(null);
+    }
+  };
+
+  const handleExtract = async () => {
+    if (images.length === 0) return;
+
+    setLoading(true);
+    setError(null);
+    setResult(null);
+
+    try {
+      const response = await fetch('/api/extract', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ images }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Có lỗi xảy ra khi xử lý.');
+      }
+
+      setResult(data.markdown);
+    } catch (err: any) {
+      setError(err.message || 'Lỗi kết nối Server.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const copyToClipboard = () => {
+    if (result) {
+      navigator.clipboard.writeText(result);
+      alert('Đã copy!');
+    }
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <main className="min-h-screen bg-gray-50 flex flex-col items-center py-12 px-4 sm:px-6 lg:px-8 font-sans">
+      <div className="max-w-4xl w-full space-y-8 bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
+        <div className="text-center pb-4 border-b border-gray-200">
+          <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
+            Document Extraction
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+          <p className="mt-2 text-gray-500 text-sm">Upload up to 10 images to extract markdown</p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+
+        {/* Upload Section */}
+        <div className="space-y-4">
+          <div 
+            className="flex justify-center border-2 border-dashed border-gray-300 rounded-xl px-6 py-12 hover:border-indigo-400 transition-colors cursor-pointer bg-gray-50 hover:bg-gray-100"
+            onClick={() => fileInputRef.current?.click()}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+            <div className="text-center">
+              <svg className="mx-auto h-12 w-12 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
+              <div className="mt-4 flex text-sm text-gray-600 justify-center">
+                <span className="relative font-medium text-indigo-600 hover:text-indigo-500">
+                  Click to upload
+                </span>
+                <p className="pl-1">or drag and drop</p>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">PNG, JPG up to 10MB</p>
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept="image/png, image/jpeg"
+              onChange={handleFileChange}
+              className="hidden"
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+          </div>
+
+          {error && <div className="text-red-500 text-sm font-medium bg-red-50 p-3 rounded-lg border border-red-100">{error}</div>}
+
+          {/* Preview Images */}
+          {images.length > 0 && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 mt-6">
+              {images.map((src, idx) => (
+                <div key={idx} className="relative group rounded-lg overflow-hidden border border-gray-200 shadow-sm aspect-square bg-gray-100">
+                  <img src={src} alt={`Preview ${idx}`} className="w-full h-full object-cover" />
+                  <button
+                    onClick={(e) => { e.stopPropagation(); removeImage(idx); }}
+                    className="absolute top-1 right-1 bg-red-500/80 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                    title="Remove"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-      </main>
-    </div>
+
+        {/* Process Button */}
+        <div className="flex justify-center pt-4">
+          <button
+            onClick={handleExtract}
+            disabled={images.length === 0 || loading}
+            className={`
+              relative px-8 py-3.5 rounded-xl font-bold text-white shadow-md transition-all duration-300
+              ${images.length === 0 
+                ? 'bg-gray-300 cursor-not-allowed shadow-none' 
+                : loading 
+                  ? 'bg-indigo-400 cursor-wait' 
+                  : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 hover:shadow-lg transform hover:-translate-y-0.5'
+              }
+            `}
+          >
+            {loading ? (
+              <span className="flex items-center space-x-2">
+                <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Processing...</span>
+              </span>
+            ) : (
+              'Extract via Gemini'
+            )}
+          </button>
+        </div>
+
+        {/* Result Markdown */}
+        {result && (
+          <div className="mt-8 border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white">
+            <div className="bg-gray-50 border-b border-gray-200 px-4 py-3 flex justify-between items-center">
+              <h2 className="font-semibold text-gray-700">Kết quả Extracted</h2>
+              <button 
+                onClick={copyToClipboard}
+                className="text-sm bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-3 py-1.5 rounded-lg flex items-center space-x-1.5 transition-colors font-medium shadow-sm border-b"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                <span>Copy Markdown</span>
+              </button>
+            </div>
+            <div className="p-0">
+              <textarea
+                readOnly
+                value={result}
+                className="w-full h-80 p-5 bg-gray-50 text-sm font-mono text-gray-800 focus:outline-none resize-y border-none"
+              />
+            </div>
+          </div>
+        )}
+      </div>
+    </main>
   );
 }
