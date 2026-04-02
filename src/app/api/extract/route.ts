@@ -103,7 +103,10 @@ export async function POST(req: Request) {
             ...imageParts
           ]
         }
-      ]
+      ],
+      generationConfig: {
+        temperature: 1.0
+      }
     };
 
     const response = await fetch(
