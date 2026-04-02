@@ -35,13 +35,14 @@ BƯỚC 1 – OCR
 - Trích xuất:
   + chữ in
   + chữ viết tay
-- Giữ nội dung ngắn, không cần chép nguyên đoạn dài
+- QUAN TRỌNG: Phải giữ lại ĐẦY ĐỦ 100% lượng thông tin chi tiết, TUYỆT ĐỐI KHÔNG TÓM TẮT hay lượt bỏ.
+- Để né lỗi vi phạm bản quyền: Tách các đoạn văn dài thành các câu nhỏ (Bullet points) và diễn đạt lại (Paraphrase) cấu trúc ngữ pháp một chút, nhưng KHÔNG ĐƯỢC làm mất nội dung hay ý nghĩa gốc.
 
 BƯỚC 2 – NHẬN DIỆN CẤU TRÚC
 
 Phân loại:
 
-- Văn bản ngắn
+- Văn bản
 - Danh sách
 - Bảng
 - Sơ đồ / mũi tên
@@ -74,12 +75,9 @@ QUY TẮC OUTPUT (BẮT BUỘC GIỮ NGUYÊN FORMAT):
 Flow:
 A → B → C
 
-4. Danh sách:
-- bullet points
-
-5. Văn bản dài:
-→ KHÔNG chép nguyên văn
-→ chỉ giữ nội dung ngắn, cần thiết
+4. Danh sách & Văn bản:
+- Văn bản dài phải được tách thành danh sách bullet points (Tương đương từng câu một).
+- Trích xuất đủ ý chi tiết, không cắt cụt.
 
 6. Ghi chú:
 → đặt ngay sau đối tượng liên quan
