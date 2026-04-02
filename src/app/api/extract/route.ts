@@ -127,7 +127,16 @@ export async function POST(req: Request) {
     }
 
     const data = await response.json();
-    const extractedText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const candidate = data.candidates?.[0];
+    const extractedText = candidate?.content?.parts?.[0]?.text || '';
+
+    if (!extractedText) {
+      const finishReason = candidate?.finishReason || 'UNKNOWN';
+      return NextResponse.json(
+        { error: `Gemini không trả về kết quả chữ nào. Lí do của AI (Finish Reason): ${finishReason}. Có thể ảnh chứa nội dung nhạy cảm hoặc bộ phận AI Safety của Google đã chặn. Mời bạn kiểm tra lại nội dung ảnh.` },
+        { status: 400 }
+      );
+    }
 
     return NextResponse.json({ markdown: extractedText });
   } catch (error: any) {
