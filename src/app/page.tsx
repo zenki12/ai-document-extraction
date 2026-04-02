@@ -9,7 +9,7 @@ export default function DocumentExtractor() {
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     
     if (images.length + files.length > 20) {
@@ -20,20 +20,50 @@ export default function DocumentExtractor() {
     setError(null);
     setResult(null);
 
-    const newImagesPromises = files.map((file) => {
-      return new Promise<string>((resolve, reject) => {
+    const compressImage = (file: File): Promise<string> => {
+      return new Promise((resolve, reject) => {
         const reader = new FileReader();
-        reader.onload = (event) => resolve(event.target?.result as string);
-        reader.onerror = (error) => reject(error);
         reader.readAsDataURL(file);
-      });
-    });
+        reader.onload = (event) => {
+          const img = new Image();
+          img.src = event.target?.result as string;
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const MAX_WIDTH = 1200;
+            const MAX_HEIGHT = 1200;
+            let width = img.width;
+            let height = img.height;
 
-    Promise.all(newImagesPromises)
-      .then((base64Images) => {
-        setImages((prev) => [...prev, ...base64Images]);
-      })
-      .catch(() => setError('Lỗi khi đọc file ảnh.'));
+            if (width > height) {
+              if (width > MAX_WIDTH) {
+                height *= MAX_WIDTH / width;
+                width = MAX_WIDTH;
+              }
+            } else {
+              if (height > MAX_HEIGHT) {
+                width *= MAX_HEIGHT / height;
+                height = MAX_HEIGHT;
+              }
+            }
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx?.drawImage(img, 0, 0, width, height);
+            // Nén ảnh xuống chất lượng 80% để giảm size
+            resolve(canvas.toDataURL('image/jpeg', 0.8));
+          };
+          img.onerror = (error) => reject(error);
+        };
+        reader.onerror = (error) => reject(error);
+      });
+    };
+
+    try {
+      const compressedImages = await Promise.all(files.map(compressImage));
+      setImages((prev) => [...prev, ...compressedImages]);
+    } catch (err) {
+      setError('Lỗi khi nén và xử lý ảnh.');
+    }
   };
 
   const removeImage = (index: number) => {
@@ -57,7 +87,16 @@ export default function DocumentExtractor() {
         body: JSON.stringify({ images }),
       });
 
-      const data = await response.json();
+      let data;
+      const textResponse = await response.text();
+      try {
+        data = JSON.parse(textResponse);
+      } catch (parseError) {
+        if (textResponse.includes('Request Entity Too Large') || response.status === 413) {
+          throw new Error('Dung lượng tổng các ảnh quá nặng! Máy chủ Vercel chỉ cho phép gửi tối đa 4.5MB mỗi lần. App đã tự động nén nhưng ảnh gốc của bạn vẫn quá khổ để xử lý 20 cái cùng lúc. Vui lòng chia làm 2-3 phần (ví dụ 5-7 ảnh/lần).');
+        }
+        throw new Error('Lỗi máy chủ không xác định (Không phải JSON). Vui lòng thử lại.');
+      }
 
       if (!response.ok) {
         throw new Error(data.details ? `Lỗi từ Gemini: ${data.details}` : data.error || 'Có lỗi xảy ra khi xử lý.');
