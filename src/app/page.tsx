@@ -93,9 +93,12 @@ export default function DocumentExtractor() {
         data = JSON.parse(textResponse);
       } catch (parseError) {
         if (textResponse.includes('Request Entity Too Large') || response.status === 413) {
-          throw new Error('Dung lượng tổng các ảnh quá nặng! Máy chủ Vercel chỉ cho phép gửi tối đa 4.5MB mỗi lần. App đã tự động nén nhưng ảnh gốc của bạn vẫn quá khổ để xử lý 20 cái cùng lúc. Vui lòng chia làm 2-3 phần (ví dụ 5-7 ảnh/lần).');
+          throw new Error('DUNG LƯỢNG QUÁ TẢI (413): Vercel từ chối vì ảnh sau nén vẫn > 4.5MB. Vui lòng thử 5-7 ảnh/lần.');
         }
-        throw new Error('Lỗi máy chủ không xác định (Không phải JSON). Vui lòng thử lại.');
+        if (textResponse.includes('504') || response.status === 504 || textResponse.includes('Gateway Timeout')) {
+          throw new Error('HẾT THỜI GIAN CHỜ (504): Quá trình phân tích AI mất nhiều hơn 10 giây nên Vercel đã tự động ngắt kết nối. Vui lòng test với 1-2 ảnh trước.');
+        }
+        throw new Error(`SERER ERROR: Phản hồi không phải JSON. Có thể Vercel đang lỗi mạng. (${response.status})`);
       }
 
       if (!response.ok) {
@@ -159,8 +162,6 @@ export default function DocumentExtractor() {
             />
           </div>
 
-          {error && <div className="text-red-500 text-sm font-medium bg-red-50 p-3 rounded-lg border border-red-100">{error}</div>}
-
           {/* Preview Images */}
           {images.length > 0 && (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 mt-6">
@@ -180,8 +181,14 @@ export default function DocumentExtractor() {
           )}
         </div>
 
-        {/* Process Button */}
-        <div className="flex justify-center pt-4">
+        {/* Process Button & Error */}
+        <div className="flex flex-col items-center pt-4 space-y-4">
+          {error && (
+            <div className="w-full text-red-600 text-sm font-medium bg-red-50 p-4 rounded-xl border border-red-200 text-center animate-pulse">
+              ⚠️ {error}
+            </div>
+          )}
+          
           <button
             onClick={handleExtract}
             disabled={images.length === 0 || loading}

@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
 
+// Tăng giới hạn timeout của Vercel (Hobby) lên mức tối đa là 60 giây (Mặc định chỉ có 10s sẽ bị văng)
+export const maxDuration = 60;
+
 const PROMPT = `HÃY ĐÓNG VAI LÀ CÔNG CỤ CHUYỂN TÀI LIỆU SCAN THÀNH MARKDOWN CÓ CẤU TRÚC CHO RAG
 
 ==================================================
