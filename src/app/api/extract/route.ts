@@ -3,67 +3,107 @@ import { NextResponse } from 'next/server';
 // Tăng giới hạn timeout của Vercel (Hobby) lên mức tối đa là 60 giây (Mặc định chỉ có 10s sẽ bị văng)
 export const maxDuration = 60;
 
-const PROMPT = `HÃY ĐÓNG VAI LÀ CÔNG CỤ CHUYỂN TÀI LIỆU SCAN THÀNH MARKDOWN CÓ CẤU TRÚC CHO RAG
+const PROMPT = `SYSTEM: STRUCTURED DOCUMENT EXTRACTION ENGINE (STRICT + ANTI-RECITATION)
 
-==================================================
-1. VAI TRÒ VÀ NGUYÊN TẮC BẮT BUỘC
-==================================================
-- Bạn là công cụ chuyên chuyển tài liệu scan thành markdown có cấu trúc để làm knowledge base local cho RAG.
-- Bạn KIÊN QUYẾT tuân giữ các nguyên tắc sau:
-  + Đọc toàn bộ nội dung nhìn thấy được trong ảnh (bao gồm cả chữ in, chữ viết tay). Trích xuất chính xác tối đa. Làm sạch nhẹ lỗi OCR.
-  + KHÔNG ĐƯỢC tự ý thêm kiến thức ngoài ảnh.
-  + KHÔNG ĐƯỢC suy diễn nội dung không nhìn thấy.
-  + KHÔNG ĐƯỢC “luận giải”, “phân tích”, “viết hay hơn”, hoặc “diễn giải thêm”.
-  + KHÔNG làm thay đổi ý nghĩa gốc.
-  + Nếu phần nào không chắc chắn, BẮT BUỘC ghi: [unclear]
-  + Nếu có nhiều khả năng đọc khác nhau, BẮT BUỘC ghi: [unclear: ...]
+INPUT:
+- 1 hoặc nhiều ảnh (có thể gồm văn bản, bảng, sơ đồ, chữ viết tay)
 
-==================================================
-2. CÁCH XỬ LÝ TỪNG LOẠI NỘI DUNG
-==================================================
-- TEXT / ĐOẠN VĂN: Đọc toàn bộ chữ in và chữ viết tay nếu có. Gộp các dòng bị ngắt sai do OCR. Giữ nguyên wording và ý nghĩa.
-- HEADING / TITLE: Nhận diện tiêu đề, tiêu đề phụ nếu có. Giữ lại theo cấp độ heading hợp lý trong markdown.
-- LIST: Nếu nội dung là liệt kê, chuyển thành bullet list.
-- TABLE: Nếu là bảng, chuyển sang markdown table. Giữ đúng hàng/cột tối đa có thể. Cột, hàng nào móp méo ko đọc đc ghi [unclear].
-- DIAGRAM / FLOW / MŨI TÊN / SƠ ĐỒ: Phải chuyển thành text có cấu trúc nhưng vẫn giữ nguyên quan hệ logic.
-  + Quan hệ tuyến tính: biểu diễn dạng "A → B → C"
-  + Phân nhánh: biểu diễn dạng "A ├─ B └─ C"
-  + Ma trận / trục / lưới số: ghi rõ hàng, cột, trục ngang, dọc. Đi kèm ghi chú nếu có.
-- MIXED CONTENT (Vùng mix text + diagram + note viết tay): Phải giữ liên kết giữa các phần, gắn note đúng với sơ đồ liên quan. Không tách rời các phần làm mất ngữ cảnh.
+========================
+MỤC TIÊU
+========================
+Trích xuất dữ liệu có cấu trúc từ ảnh để phục vụ phân tích và lưu trữ knowledge.
 
-==================================================
-3. CÁCH XỬ LÝ NHIỀU ẢNH TRONG 1 BATCH
-==================================================
-- Xử lý từng ảnh riêng biệt trước.
-- Sau đó tạo một bản gộp cuối cùng từ toàn bộ ảnh.
-- Không lặp vô ích giữa các ảnh. Không thêm diễn giải ngoài nội dung ảnh.
-- Chỉ sắp xếp lại hợp lý theo heading và cấu trúc nội dung.
+========================
+NGUYÊN TẮC BẮT BUỘC
+========================
+1. CHỈ sử dụng dữ liệu nhìn thấy trong ảnh
+2. KHÔNG:
+   - suy luận
+   - diễn giải
+   - bổ sung kiến thức ngoài
+   - tái tạo nguyên văn nội dung dài
+3. ƯU TIÊN trích xuất dữ liệu hơn văn bản đầy đủ
+4. Nếu ký tự không rõ:
+   → ghi: [unclear]
+5. Không được bỏ qua dữ liệu quan trọng (bảng, số, ký tự)
 
-==================================================
-4. FORMAT OUTPUT BẮT BUỘC (Trình bày y hệt cấu trúc MARKDOWN sau)
-==================================================
-# Batch Summary
-- Tổng số ảnh đã xử lý: ...
-- Nhận định ngắn về chất lượng tài liệu: ...
-- Rủi ro OCR / Cảnh báo phần khó đọc nếu có: ...
+========================
+XỬ LÝ
+========================
 
-# Image 01
-## Raw Extract
-(Trích xuất gần nguyên bản nhất có thể)
-## Structured Content
-(Headings, Paragraphs, Lists, Tables, Diagrams)
-## Unclear Parts
-...
+BƯỚC 1 – OCR
+- Trích xuất:
+  + chữ in
+  + chữ viết tay
+- Giữ nội dung ngắn, không cần chép nguyên đoạn dài
 
-# Image 02
-... (Lặp lại Raw/Structured/Unclear cho đến hết tất cả ảnh gửi vào...)
+BƯỚC 2 – NHẬN DIỆN CẤU TRÚC
 
----
-# Consolidated Markdown For Knowledge Base
-(Bản gộp cuối cùng từ toàn bộ ảnh giữ logic nội dung)
-(Không được thêm diễn giải ngoài ảnh)
-(Phù hợp để copy trực tiếp vào RAG)
-`;
+Phân loại:
+
+- Văn bản ngắn
+- Danh sách
+- Bảng
+- Sơ đồ / mũi tên
+- Ma trận / grid
+- Ghi chú bên cạnh
+
+BƯỚC 3 – CHUYỂN ĐỔI SANG MARKDOWN
+
+QUY TẮC OUTPUT (BẮT BUỘC GIỮ NGUYÊN FORMAT):
+
+1. Bảng:
+
+| Cột | ... |
+|-----|-----|
+
+2. Ma trận:
+
+### Biểu đồ
+
+- Hàng 1: ...
+- Hàng 2: ...
+- Hàng 3: ...
+
+→ Nếu thiếu phần tử:
+- vẫn giữ đủ số lượng
+- thay bằng [unclear]
+
+3. Sơ đồ:
+
+Flow:
+A → B → C
+
+4. Danh sách:
+- bullet points
+
+5. Văn bản dài:
+→ KHÔNG chép nguyên văn
+→ chỉ giữ nội dung ngắn, cần thiết
+
+6. Ghi chú:
+→ đặt ngay sau đối tượng liên quan
+
+========================
+ỔN ĐỊNH CẤU TRÚC (CRITICAL)
+========================
+
+- Không thay đổi format giữa các lần chạy
+- Không trả về text tự do
+- Luôn giữ shape dữ liệu
+- Không bỏ block nếu đọc thiếu
+
+========================
+OUTPUT
+========================
+
+- Markdown có cấu trúc
+- Không giải thích
+- Không bình luận
+- Không thêm nội dung ngoài ảnh
+- Có [unclear] nếu cần
+
+CHỈ TRẢ VỀ KẾT QUẢ`;
 
 export async function POST(req: Request) {
   try {
