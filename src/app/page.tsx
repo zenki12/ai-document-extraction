@@ -12,8 +12,8 @@ export default function DocumentExtractor() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     
-    if (images.length + files.length > 10) {
-      setError('Tối đa chỉ được upload 10 ảnh.');
+    if (images.length + files.length > 20) {
+      setError('Tối đa chỉ được upload 20 ảnh một lần (1 Batch). Vui lòng chia thành nhiều Batch.');
       return;
     }
 
@@ -83,9 +83,11 @@ export default function DocumentExtractor() {
       <div className="max-w-4xl w-full space-y-8 bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
         <div className="text-center pb-4 border-b border-gray-200">
           <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
-            Document Extraction
+            RAG Document Extraction
           </h1>
-          <p className="mt-2 text-gray-500 text-sm">Upload up to 10 images to extract markdown</p>
+          <p className="mt-4 text-gray-600 text-sm max-w-2xl mx-auto">
+            Upload tối đa 20 ảnh scan/tài liệu. App sẽ convert nội dung thành markdown có cấu trúc để bạn dùng cho knowledge base local / RAG.
+          </p>
         </div>
 
         {/* Upload Section */}
@@ -106,7 +108,7 @@ export default function DocumentExtractor() {
                 </span>
                 <p className="pl-1">or drag and drop</p>
               </div>
-              <p className="text-xs text-gray-500 mt-2">PNG, JPG up to 10MB</p>
+              <p className="text-xs text-gray-500 mt-2">Lưu ý rủi ro: Nếu ảnh mờ hoặc mất nét, kết quả có thể chứa [unclear]</p>
             </div>
             <input
               ref={fileInputRef}
