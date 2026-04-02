@@ -60,7 +60,7 @@ export default function DocumentExtractor() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Có lỗi xảy ra khi xử lý.');
+        throw new Error(data.details ? `Lỗi từ Gemini: ${data.details}` : data.error || 'Có lỗi xảy ra khi xử lý.');
       }
 
       setResult(data.markdown);
