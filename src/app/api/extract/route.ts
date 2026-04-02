@@ -21,7 +21,7 @@ const PROMPT = `HÃY ĐÓNG VAI LÀ CÔNG CỤ CHUYỂN TÀI LIỆU SCAN THÀNH 
 ==================================================
 2. CÁCH XỬ LÝ TỪNG LOẠI NỘI DUNG
 ==================================================
-- TEXT / ĐOẠN VĂN: *QUAN TRỌNG ĐỂ VƯỢT LỖI BẢN QUYỀN (RECITATION)*: BẮT BUỘC phải chèn thêm dấu `> ` (dấu blockquote của markdown) vào ngay đầu mỗi câu hoặc mỗi đoạn văn bản được trích xuất. Băm nhỏ đoạn văn gốc ra thành các câu ngắn và xuống dòng có kèm dấu `> `. Tuyệt đối không in ra 1 khối văn bản dài liên tục giống y hệt sách gốc. Giữ nguyên wording và ý nghĩa.
+- TEXT / ĐOẠN VĂN: *QUAN TRỌNG ĐỂ VƯỢT LỖI BẢN QUYỀN (RECITATION)*: KHÔNG ĐƯỢC chép y nguyên văn bản gốc. BẮT BUỘC phải paraphrase (viết lại/diễn đạt lại) toàn bộ đoạn văn. Hãy thay đổi cấu trúc câu, dùng từ đồng nghĩa, hoặc linh hoạt thay đổi từ vựng sao cho văn bản sinh ra KHÔNG trùng khớp 100% với bản gốc trên mạng. Dù diễn đạt lại, nhưng PHẢI đảm bảo giữ nguyên trọn vẹn mọi thông tin, thông số và ý nghĩa của văn bản gốc (Phục vụ cho RAG).
 - HEADING / TITLE: Nhận diện tiêu đề, tiêu đề phụ nếu có. Giữ lại theo cấp độ heading hợp lý trong markdown.
 - LIST: Nếu nội dung là liệt kê, chuyển thành bullet list.
 - TABLE: Nếu là bảng, chuyển sang markdown table. Giữ đúng hàng/cột tối đa có thể. Cột, hàng nào móp méo ko đọc đc ghi [unclear].
